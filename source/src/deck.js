@@ -1,10 +1,10 @@
 "use strict";
 /* ============ Common Tones — teacher deck: stages on a 1600×900 canvas, scaled to the window. Arrows/space/numbers move it, [ ] change key, A shows answers ============ */
 const $ = id => document.getElementById(id);
-const D = { key: "G", cur: 0, ans: false };
-try { const p = JSON.parse(localStorage.getItem("commontones.deck.v1") || "{}"); ["key", "cur"].forEach(k => { if (p[k] !== undefined) D[k] = p[k]; }); } catch (e) {}
-if (window.__baking) Object.assign(D, { key: "G", cur: 0, ans: true });
-const saveD = () => { try { localStorage.setItem("commontones.deck.v1", JSON.stringify({ key: D.key, cur: D.cur })); } catch (e) {} };
+const D = { key: "G", cur: 0, ans: false, inv: 0 };
+try { const p = JSON.parse(localStorage.getItem("commontones.deck.v1") || "{}"); ["key", "cur", "inv"].forEach(k => { if (p[k] !== undefined) D[k] = p[k]; }); } catch (e) {}
+if (window.__baking) Object.assign(D, { key: "G", cur: 0, ans: true, inv: 0 });
+const saveD = () => { try { localStorage.setItem("commontones.deck.v1", JSON.stringify({ key: D.key, cur: D.cur, inv: D.inv })); } catch (e) {} };
 const prompts = list => `<ul class="prompts">${list.map(t => `<li>${t}</li>`).join("")}</ul>`;
 const say = t => `<p class="say"><span>say it like this</span>${t}</p>`;
 const dsharpNote = names => { const d = names.filter(n => n.includes("𝄪")); return d.length ? ` <small class="ds">(${[...new Set(d)].map(n => n + " is the " + pretty(LET[(LET.indexOf(n[0]) + 1) % 7]) + " key").join(", ")})</small>` : ""; };
@@ -37,30 +37,45 @@ const HISTORY = [
 ];
 const chainSyms = (M, c) => c.map(d => M.ch[d].sym).join(" → "), chainRoots = (M, c) => c.map(d => M.ch[d].tones[0].name).join(" ");
 /* one walk through every chord in the key, nearest shape each time, from the root-position home chord */
-function chainStage(k, t, chain, say) { return { k, t, b(m, M) {
-  let cur = M.home[0]; const items = chain.map((d, i) => { const prev = cur; if (i) cur = nearest(cur, M.ch[d].tones);
+function chainStage(k, t, chain, say) { return { k, t, chain: true, b(m, M) {
+  const inv = D.inv || 0, h = M.home[inv]; let cur = h; const items = chain.map((d, i) => { const prev = cur; if (i) cur = nearest(cur, M.ch[d].tones);
     return { v: cur, col: d === 0 ? C.home : sideCol(SIDE[d]), label: M.ch[d].sym, sub: i ? moveText(moves(prev, cur).filter(x => x.st)) : "start", heldMidi: i ? prev.notes.map(n => n.midi).filter(x => cur.notes.some(n => n.midi === x)) : [] }; });
-  m.innerHTML = `<div class="stf wide"></div><div class="hero2"><div class="kbBig"></div><div class="side">${prompts(say(M))}</div></div>`;
+  const pick = `<div class="invpick"><span>start from</span>${M.home.map((x, i) => `<button type="button" data-inv="${i}" class="${i === inv ? "on" : ""}">${INVS[i]} · ${notesOf(x)}</button>`).join("")}<em>I</em></div>`;
+  m.innerHTML = `<div class="stf wide"></div><div class="hero2"><div class="kbBig"></div><div class="side">${pick}${prompts(say(M))}</div></div>`;
+  m.querySelectorAll(".invpick button").forEach(b => b.addEventListener("click", () => { D.inv = +b.dataset.inv; show(); }));
   drawChordRow(m.querySelector(".stf"), items, M.sig, { width: 900, height: 200, top: 46, fs: 19, subFs: 14 });
-  const h = M.home[0]; drawKeys(m.querySelector(".kbBig"), h.notes.map(n => ({ midi: n.midi, name: n.name, col: C.home })).concat([{ midi: h.notes[0].midi - 12 - (mod(h.notes[0].midi - M.I.tones[0].pc, 12)), name: M.I.tones[0].name, col: C.lh }]), { ww: 34, wh: 190 }); } }; }
+  drawKeys(m.querySelector(".kbBig"), h.notes.map(n => ({ midi: n.midi, name: n.name, col: C.home })).concat([{ midi: h.notes[0].midi - 12 - (mod(h.notes[0].midi - M.I.tones[0].pc, 12)), name: M.I.tones[0].name, col: C.lh }]), { ww: 34, wh: 190 }); } }; }
 const STAGES = [
-  chainStage("Play it first", M => `${M.I.sym}, one finger at a time`, [0, 5, 3, 1, 6, 4, 2, 0], M => [`Play the chain before you say a word: ${chainSyms(M, [0, 5, 3, 1, 6, 4, 2, 0])}.`, "Each chord, only one finger moves, always up a step.", `Left hand: the roots, falling in thirds — ${chainRoots(M, [0, 5, 3, 1, 6, 4, 2, 0])}.`, "Play it twice. Then ask: how did every chord in the key fit under one hand?"]),
+  chainStage("Play it first", M => `${M.I.sym}, one finger at a time`, [0, 5, 3, 1, 6, 4, 2, 0], M => [`Play the chain before you say a word: ${chainSyms(M, [0, 5, 3, 1, 6, 4, 2, 0])}.`, "Each chord, only one finger moves, always up a step — from any of the three shapes.", `Left hand: the roots, falling in thirds — ${chainRoots(M, [0, 5, 3, 1, 6, 4, 2, 0])}.`, "Play it twice. Then ask: how did every chord in the key fit under one hand?"]),
   chainStage("Other ways round", M => "Thirds up: the same chords, backwards", [0, 2, 4, 6, 1, 3, 5, 0], M => [`Same seven chords, the other way: ${chainSyms(M, [0, 2, 4, 6, 1, 3, 5, 0])}.`, "Two notes still stay. Now the one finger steps down.", `Left hand: the roots, rising in thirds — ${chainRoots(M, [0, 2, 4, 6, 1, 3, 5, 0])}.`, "Ask: which way did the notes go this time?"]),
   chainStage("Other ways round", M => "Round the circle: one note stays", [0, 3, 6, 2, 5, 1, 4, 0], M => [`Every chord in the key, round the circle: ${chainSyms(M, [0, 3, 6, 2, 5, 1, 4, 0])}.`, "One note stays. Two fingers step up.", `Left hand: up a fourth each time — ${chainRoots(M, [0, 3, 6, 2, 5, 1, 4, 0])}. ${M.ch[3].tones[0].name} to ${M.ch[6].tones[0].name} is the one augmented fourth.`, "The bass leaps round the circle of fifths; the right hand barely moves."]),
+  { k: "Other ways round", t: M => "The diatonic circle", b(m, M) {
+      const tri = `${M.ch[3].sym} → ${M.ch[6].sym}`;
+      m.innerHTML = `<div class="dcirc"><div class="dc"></div><div class="side">${prompts([`The seven chords of ${M.I.sym} sit on seven neighbouring spots of the circle of fifths.`, "Walk it in fourths: each chord keeps the root you just left. That gold note is the one that stays.", `Six steps go round the edge. One, ${tri}, cuts straight across: the key's only tritone, the diminished chord's doorway.`, "Play the circle chain under this. Then from 1st inversion, then 2nd."])}</div></div>`;
+      drawDiatonicCircle(m.querySelector(".dc"), M, { w: 1000, h: 1000, r: 360, nr: 74 }); } },
   chainStage("Other ways round", M => "Fifths up: one note stays, two fall", [0, 4, 1, 5, 2, 6, 3, 0], M => [`The circle backwards: ${chainSyms(M, [0, 4, 1, 5, 2, 6, 3, 0])}.`, "One note stays. Two fingers step down.", `Left hand: up a fifth each time — ${chainRoots(M, [0, 4, 1, 5, 2, 6, 3, 0])}. ${M.ch[6].tones[0].name} to ${M.ch[3].tones[0].name} is the one diminished fifth.`, "Four walks, every chord each time: thirds keep two notes, fourths and fifths keep one."]),
   { k: "Shared notes", t: M => `How many notes does each chord share with ${M.I.sym}?`, b(m, M) {
       const grp = [[2, [5, 2], "two shared · one note moves"], [1, [3, 4], "one shared · two notes move"], [0, [1, 6], "none shared · all three move"]];
       m.innerHTML = `<div class="home1">${chordChip(M.I, M, `<span class="lab">${M.I.rn} · tonic</span>`)}</div><div class="groups">${grp.map(([n, ds, cap]) => `<div class="grp g${n}"><p class="gcount"><b>${n}</b> ${cap}</p>${ds.map(d => `<div class="row"><span class="rn ${SIDE[d]}">${M.ch[d].rn}</span><span class="sym">${M.ch[d].sym}</span>${chordChip(M.ch[d], M)}</div>`).join("")}</div>`).join("")}</div>
         ${prompts(["Ask them to count before you show the gold notes.", `The relative minor, ${M.ch[5].sym}, is the submediant — the vi chord.`, "Recap of the triads-and-inversions lesson. New today: which WAY the notes go."])}`; } },
-  { k: "One note moves", t: M => `${M.ch[5].sym} and ${M.ch[2].sym}: the closest neighbours`, b(m, M) {
-      m.innerHTML = `<div class="cols2">${pairCard(M, 5)}${pairCard(M, 2)}</div>${say(`To get to ${M.ch[5].sym}, lift one note a whole step. To get to ${M.ch[2].sym}, drop one note a half step. That's all.`)}`;
-      m.querySelectorAll(".kb").forEach((h, i) => moveKb(h, M, 0, [5, 2][i], { ww: 30, wh: 120 })); } },
-  { k: "Two notes move", t: M => `${M.ch[3].sym} and ${M.ch[4].sym}: one note stays`, b(m, M) {
-      m.innerHTML = `<div class="cols2">${pairCard(M, 3)}${pairCard(M, 4)}</div>${say(`${M.ch[3].sym}: keep ${shared(M.ch[3], M.I)[0].name}, the other two climb. ${M.ch[4].sym}: keep ${shared(M.ch[4], M.I)[0].name}, the other two sink.`)}`;
-      m.querySelectorAll(".kb").forEach((h, i) => moveKb(h, M, 0, [3, 4][i], { ww: 30, wh: 120 })); } },
-  { k: "All three move", t: M => `${M.ch[1].sym} and ${M.ch[6].sym}: nothing in common`, b(m, M) {
-      m.innerHTML = `<div class="cols2">${pairCard(M, 1)}${pairCard(M, 6)}</div>${say(`${M.ch[1].sym}: every finger steps up. ${M.ch[6].sym}: every finger steps down. Still only a step each.`)}`;
-      m.querySelectorAll(".kb").forEach((h, i) => moveKb(h, M, 0, [1, 6][i], { ww: 30, wh: 120 })); } },
+  { k: "Six neighbours", t: M => `Out from ${M.I.sym}: one, two or three notes move`, b(m, M) {
+      const card = d => { const r = M.sh[0][d], c = r.c, keep = shared(c, M.I);
+        return `<div class="nb ${SIDE[d]}"><div class="kb"></div><div class="tx"><h4><span class="rn">${c.rn}</span> ${c.sym} <small>${c.deg}</small></h4>
+          <p class="mvline">${r.mv.map(x => `<b>${x.from.name}</b> ${x.st > 0 ? "↑" : "↓"} <b>${x.to.name}</b> <i>${stepWord(x.st)}</i>`).join(" · ")}</p>
+          <p class="keep">${keep.length ? `stays: ${keep.map(t => t.name).join(" ")}` : "nothing stays"}</p></div></div>`; };
+      const rows = [[1, 5, 2, "two notes stay"], [2, 3, 4, "one note stays"], [3, 1, 6, "nothing stays"]];
+      m.innerHTML = `<div class="six"><span></span><p class="sixh up">notes go UP</p><p class="sixh down">notes go DOWN</p>
+        ${rows.map(([n, u, d, cap]) => `<div class="sixn"><b>${n}</b><span>${n === 1 ? "note moves" : "notes move"}</span><small>${cap}</small></div>${card(u)}${card(d)}`).join("")}</div>`;
+      const all = [5, 2, 3, 4, 1, 6].flatMap(d => M.sh[0][d].v.notes.map(n => n.midi)).concat(M.home[0].notes.map(n => n.midi)), lo = Math.min(...all) - 1, hi = Math.max(...all) + 1;
+      m.querySelectorAll(".six .kb").forEach((h, i) => moveKb(h, M, 0, [5, 2, 3, 4, 1, 6][i], { lo, hi, ww: 18, wh: 78 })); } },
+  { k: "Nothing shared", t: M => "The triad pair: two chords, one six-note scale", b(m, M) {
+      const sc = scale(M.key, "major"), pairs = [[0, 1], [6, 0], [3, 4]];
+      const climb = pairClimb(M.ch[0], M.ch[1], M.home[0].notes[0].midi - 12 < 55 ? M.home[0].notes[0].midi : M.home[0].notes[0].midi - 12);
+      m.innerHTML = `<div class="tp3">${pairs.map(([a, b]) => `<div class="tp"><h4><span class="ca">${M.ch[a].sym}</span> + <span class="cb">${M.ch[b].sym}</span> <small>${M.ch[a].rn} + ${M.ch[b].rn}</small></h4><div class="kb"></div><p class="hx">${pairScale(sc, M.ch[a], M.ch[b]).map(t => t.name).join(" ")}</p></div>`).join("")}</div>
+        <div class="stf wide tpst"></div>${prompts([`Chords a step apart share nothing, so together they fill six notes of the scale. ${M.ch[3].sym} + ${M.ch[4].sym} (IV + V) is the gospel favourite.`, `Climb the pair: ${climb.map(x => x.c.sym).join(" → ")}. Every shape in turn; the bass walks up ${climb.map(x => x.v.notes[0].name).join(" ")}.`])}`;
+      m.querySelectorAll(".tp .kb").forEach((h, i) => { const [a, b] = pairs[i], va = voice(M.ch[a].tones, 0, 60), vb = voice(M.ch[b].tones, 0, va.notes[0].midi + (b === 0 ? -2 : 1));
+        drawKeys(h, va.notes.map(n => ({ midi: n.midi, name: n.name, col: a === 0 ? C.home : sideCol(SIDE[a]) })).concat(vb.notes.map(n => ({ midi: n.midi, name: n.name, col: b === 0 ? C.home : sideCol(SIDE[b]) }))), { ww: 24, wh: 110 }); });
+      drawChordRow(m.querySelector(".tpst"), climb.map(x => ({ v: x.v, col: x.c.d === 0 ? C.home : sideCol(SIDE[x.c.d]), label: x.c.sym, sub: x.v.notes[0].name })), M.sig, { width: 1500, height: 190, top: 46, fs: 19, subFs: 15 }); } },
   { k: "The ladder", t: M => `Lift the notes, or let them sink`, b(m, M) {
       const rung = (d, n) => `<div class="rung ${SIDE[d]}"><span class="n">${n}</span><span class="rn">${M.ch[d].rn}</span><b>${M.ch[d].sym}</b><small>${M.ch[d].deg}</small><em>${moveText(M.sh[0][d].mv)}</em></div>`;
       m.innerHTML = `<div class="ladder2"><div class="lcol"><p class="lhead up">notes go UP · subdominant side</p>${rung(1, 3)}${rung(3, 2)}${rung(5, 1)}</div>
@@ -124,7 +139,7 @@ const STAGES = [
       m.innerHTML = `<div class="tree"><div class="trunk"><b>${M.I.tones[0].name}</b><small>held</small></div><div class="branches">${tr.map(c => `<div class="br ${c.home}"><b>${c.sym}</b><small>${c.tones.map(t => t.name).join(" ")}</small><i>${M.I.tones[0].name} is the ${c.as}</i><em>${c.home === "major" ? "in " + M.I.sym + " major" : c.home === "minor" ? "borrowed from " + parName : "outside the key"}</em></div>`).join("")}</div></div>
         ${prompts([`Six major and minor chords hold ${M.I.tones[0].name}: as root, third or fifth.`, `Three live in ${M.I.sym} major. The other three come from ${parName} — the same home note, the dark side.`, "Diatonic vs borrowed: one common note is the doorway out of the key. Part 3.", "Every tree, any note: the lesson Find Every Chord That Fits Any Melody Note."])}`; } },
   { k: "Practice plan", t: M => `Five days with ${M.I.sym}`, b(m, M) {
-      m.innerHTML = `<ol class="plan"><li><b>Day 1 · the four walks</b><span>Thirds down, thirds up, the circle, fifths up. Every chord in the key, each time.</span></li><li><b>Day 2 · out and back from root position</b><span>Tonic, then each chord, then tonic. Hold the gold notes.</span></li><li><b>Day 3 · from 1st and 2nd inversion</b><span>Same six trips from the other two shapes.</span></li><li><b>Day 4 · ears only</b><span>Someone plays the tonic, then a mystery chord. Count the movers, name the chord.</span></li><li><b>Day 5 · minor + a new key</b><span>${scale(M.key, "natural")[0].name} minor, then the next key round the circle.</span></li></ol>`; } },
+      m.innerHTML = `<ol class="plan"><li><b>Day 1 · the four walks</b><span>Thirds down, thirds up, the circle, fifths up. Every chord in the key, each time — from root position, then 1st, then 2nd inversion.</span></li><li><b>Day 2 · out and back from root position</b><span>Tonic, then each chord, then tonic. Hold the gold notes.</span></li><li><b>Day 3 · from 1st and 2nd inversion</b><span>Same six trips from the other two shapes.</span></li><li><b>Day 4 · ears only</b><span>Someone plays the tonic, then a mystery chord. Count the movers, name the chord.</span></li><li><b>Day 5 · minor + a new key</b><span>${scale(M.key, "natural")[0].name} minor, then the next key round the circle.</span></li></ol>`; } },
   { k: "Close", t: M => `Take it into every key`, b(m, M) {
       m.innerHTML = `<div class="close"><div><h3>The practice app</h3><p>All 12 keys, every shape, the moves highlighted, real piano down to 40 bpm and a metronome.</p></div><div><h3>Patreon</h3><p>The app, the MIDI of this lesson and the notes: patreon.com/jasonzac</p></div><div><h3>Part 2 · Part 3</h3><p>Seventh chords flip the ladder. Then the chord tree: one note, and the doorway out of the key.</p></div></div>`; } }
 ];
@@ -146,8 +161,9 @@ async function boot() {
     STAGES.forEach((st, i) => { const sec = document.createElement("section"); sec.className = "baked"; sec.innerHTML = `<header class="sh"><p class="kick"><span>${String(i + 1).padStart(2, "0")}</span> ${st.k}</p><h2>${st.t(M)}</h2></header><div class="body"></div>`; m.appendChild(sec); st.b(sec.querySelector(".body"), M); });
     window.__ready = true; return; }
   show(); fit(); window.addEventListener("resize", fit);
+  document.addEventListener("keydown", e => { if ((e.key === "i" || e.key === "I") && !e.metaKey && !e.ctrlKey && !e.altKey && STAGES[D.cur].chain) { D.inv = (D.inv + 1) % 3; show(); e.preventDefault(); } });
   installDeckNav({ total: () => STAGES.length, current: () => D.cur, go: i => { D.cur = i; show(); }, transpose });
-  $("hint").textContent = NAV_HINT + " · A answers";
+  $("hint").textContent = NAV_HINT + " · A answers · I start shape";
   $("prevK").addEventListener("click", () => transpose(-1)); $("nextK").addEventListener("click", () => transpose(1));
   document.addEventListener("keydown", e => { if ((e.key === "a" || e.key === "A") && !e.metaKey && !e.ctrlKey) { D.ans = !D.ans; show(); } });
   window.__ready = true;

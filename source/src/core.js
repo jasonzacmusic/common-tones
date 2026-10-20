@@ -92,3 +92,9 @@ function parallelMinor(key) { const k = parse(key), rel = mod(k.pc + 3, 12); con
 /* key signature string VexFlow wants */
 function vfSig(key, mode) { if (mode === "major") return key; const sc = scale(key, "natural"); return sc[0].name.replace("♯", "#").replace("♭", "b") + "m"; }
 const INVN = ["root position", "1st inversion", "2nd inversion", "3rd inversion"], INVS = ["root", "1st", "2nd", "3rd"];
+/* triad pair: two chords with nothing in common climb through their shapes in turn; the bass walks the six-note scale they make */
+function pairClimb(chA, chB, low) { const out = []; let lo = low;
+  for (let k = 0; k < 7 || out[out.length - 1].c !== (chA.d === 0 ? chA : chB); k++) { const c = k % 2 ? chB : chA, v = voice(c.tones, Math.floor(k / 2) % 3, lo); out.push({ c, v }); lo = v.notes[0].midi + 1; if (k > 9) break; }
+  return out; }
+function pairScale(sc, chA, chB) { const pcs = new Set(chA.tones.concat(chB.tones).map(t => t.pc)), i = sc.findIndex(t => t.pc === chA.tones[0].pc);
+  return sc.slice(i).concat(sc.slice(0, i)).filter(t => pcs.has(t.pc)); }

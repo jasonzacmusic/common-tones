@@ -42,13 +42,14 @@ BAKE = ["keyChips", "modeChips", "sizeChips", "ladderKey", "ladder", "now", "liv
 from playwright.sync_api import sync_playwright
 os.makedirs(OUT, exist_ok=True); tmp = os.path.join(OUT, "_pass1-app.html"); open(tmp, "w", encoding="utf-8").write(fill({}))
 GATE = """(()=>{const bad=[];let n=0;
- for(const k of KEYS)for(const mode of ["major","natural","harmonic"])for(const size of [3,4])for(const ex of ["chain","up3","circle","up5","out"])for(let sh=0;sh<size;sh++){
+ for(const k of KEYS)for(const mode of ["major","natural","harmonic"])for(const size of [3,4])for(const ex of ["chain","up3","circle","up5","out","pair2","pair7","pair45"])for(let sh=0;sh<size;sh++){
   Object.assign(S,{key:k,mode,size,ex,target:"all",shape:sh});try{refresh();}catch(e){bad.push(k+mode+size+ex+sh+': '+e.message);continue}
   if(document.getElementById('staff').textContent.includes('could not draw'))bad.push('staff '+k+mode+size);
   const cnt=document.getElementById('staff').querySelectorAll('svg').length; if(!cnt)bad.push('no staff svg '+k+mode+size);
   SEQ.forEach((x,i)=>{ if(x.v.notes.some(m=>m.midi<36||m.midi>90))bad.push('range '+k+mode+size+ex+i);
     if(Math.abs(x.v.notes[0].acc)>1&&!(mode==='harmonic'))bad.push('double acc '+k+mode+x.c.sym);
     if(mode!=='harmonic'){ /* out-and-back: shared notes held, movers one way by step; chain: exactly one mover */
+      if(ex.startsWith('pair')){ if(i>0&&x.v.notes[0].midi<=SEQ[i-1].v.notes[0].midi)bad.push('pair bass '+k+mode+ex+i); if(i>0&&x.mv.length!==3)bad.push('pair shared '+k+mode+ex+i); n++; return; }
       const mv=x.mv; if(ex!=='out'&&i>0){const want=(ex==='chain'||ex==='up3')?1:2; if(mv.length!==want)bad.push(ex+' '+k+mode+size+sh+' '+x.c.sym+' moved '+mv.length);
         if(new Set(mv.map(m=>Math.sign(m.st))).size!==1)bad.push(ex+' dir '+k+mode+size+sh+x.c.sym); if(mv.some(m=>Math.abs(m.st)>2))bad.push(ex+' leap '+k+mode+size+sh+x.c.sym);}
       if(ex==='out'&&x.d){const r=M.to[sh][x.d],sh2=x.c.tones.filter(t=>M.ch[0].tones.some(y=>y.pc===t.pc)).length;
@@ -67,7 +68,7 @@ with sync_playwright() as pw:
     static["targetHidden"] = ""; static["shapeHidden"] = ""
     g = pg.evaluate(GATE); q = pg.evaluate(QUIZ); b.close()
 os.remove(tmp); assert not errs, errs
-print(f"  gate: {g['n']} chords checked across 12 keys x 3 scales x 2 sizes x 5 drills x every shape; problems: {len(g['bad'])}")
+print(f"  gate: {g['n']} chords checked across 12 keys x 3 scales x 2 sizes x 8 drills x every shape; problems: {len(g['bad'])}")
 assert not g["bad"], g["bad"]
 print(f"  quiz: 40 simulated questions, score shows '{q['s']}' (one wrong count on purpose each time) ; problems: {q['bad']}")
 assert not q["bad"] and q["done"] == 40 and q["right"] == 0, q
