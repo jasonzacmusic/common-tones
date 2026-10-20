@@ -539,7 +539,7 @@ const CHAINS = {
   up5: { label: "Fifths up", o: [0, 4, 1, 5, 2, 6, 3], roots: "roots up a fifth each time, the circle backwards" } };
 const NUMW = ["No notes", "One note", "Two notes", "Three notes"], FING = ["", "one finger", "two fingers", "three fingers"];
 function chainNote() { const c = CHAINS[S.ex], h = M.home[S.shape], v = nearest(h, M.ch[c.o[1]].tones), mv = moves(h, v).filter(m => m.st), kept = S.size - mv.length;
-  return `Every chord in the key, ${c.roots}. ${NUMW[kept]} stay; ${FING[mv.length]} step ${mv[0].st > 0 ? "up" : "down"} each time.`; }
+  return `Every chord in the key, ${c.roots}. ${NUMW[kept]} ${kept === 1 ? "stays" : "stay"}; ${FING[mv.length]} step ${mv[0].st > 0 ? "up" : "down"} each time.`; }
 function sequence() {
   const h = M.home[S.shape], out = [];
   if (CHAINS[S.ex]) { let cur = h; CHAINS[S.ex].o.forEach((d, i) => { const prev = cur; if (i) cur = nearest(cur, M.ch[d].tones); out.push({ d, v: cur, prev }); }); }
