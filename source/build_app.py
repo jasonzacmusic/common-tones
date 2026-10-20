@@ -22,7 +22,7 @@ bank = json.load(open(SAMPLES)); samples = {k: v for k, v in bank.items() if 36 
 LOGO = "data:image/png;base64," + b64(LOGOS + "NSM Full Logo - White.png")
 FAV = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2315131c'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23F4C16A'/%3E%3Ccircle cx='32' cy='10' r='6' fill='%23FF8A5C'/%3E%3Ccircle cx='32' cy='54' r='6' fill='%235ED6C8'/%3E%3C/svg%3E"
 DESC = ("Common Tones by Jason Zac: from the home chord, every chord in the key is one, two or three fingers away. All 12 keys, major and minor, triads and "
-        "seventh chords, the thirds chain and out-and-back drills from every inversion, real piano from 40 bpm, a metronome, and a which-note-moved ear quiz. Nathaniel School of Music.")
+        "seventh chords, four chains through every chord in the key, out-and-back drills from every inversion, real piano from 40 bpm, a metronome, and a which-note-moved ear quiz. Nathaniel School of Music.")
 LINKS = [("patreon.com/jasonzac", "https://www.patreon.com/jasonzac"), ("nathanielschool.com", "https://www.nathanielschool.com/"),
          ("Free lessons library", "https://free-music-lessons.nathanielschool.com/"), ("Chord Trees app", "https://chord-trees.nathanielschool.com/"),
          ("YouTube", "https://www.youtube.com/@nathanielmusicschool")]
@@ -42,14 +42,15 @@ BAKE = ["keyChips", "modeChips", "sizeChips", "ladderKey", "ladder", "now", "liv
 from playwright.sync_api import sync_playwright
 os.makedirs(OUT, exist_ok=True); tmp = os.path.join(OUT, "_pass1-app.html"); open(tmp, "w", encoding="utf-8").write(fill({}))
 GATE = """(()=>{const bad=[];let n=0;
- for(const k of KEYS)for(const mode of ["major","natural","harmonic"])for(const size of [3,4])for(const ex of ["chain","out"])for(let sh=0;sh<size;sh++){
+ for(const k of KEYS)for(const mode of ["major","natural","harmonic"])for(const size of [3,4])for(const ex of ["chain","up3","circle","up5","out"])for(let sh=0;sh<size;sh++){
   Object.assign(S,{key:k,mode,size,ex,target:"all",shape:sh});try{refresh();}catch(e){bad.push(k+mode+size+ex+sh+': '+e.message);continue}
   if(document.getElementById('staff').textContent.includes('could not draw'))bad.push('staff '+k+mode+size);
   const cnt=document.getElementById('staff').querySelectorAll('svg').length; if(!cnt)bad.push('no staff svg '+k+mode+size);
   SEQ.forEach((x,i)=>{ if(x.v.notes.some(m=>m.midi<36||m.midi>90))bad.push('range '+k+mode+size+ex+i);
     if(Math.abs(x.v.notes[0].acc)>1&&!(mode==='harmonic'))bad.push('double acc '+k+mode+x.c.sym);
     if(mode!=='harmonic'){ /* out-and-back: shared notes held, movers one way by step; chain: exactly one mover */
-      const mv=x.mv; if(ex==='chain'&&i>0&&mv.length!==1)bad.push('chain '+k+mode+size+sh+' '+x.c.sym+' moved '+mv.length);
+      const mv=x.mv; if(ex!=='out'&&i>0){const want=(ex==='chain'||ex==='up3')?1:2; if(mv.length!==want)bad.push(ex+' '+k+mode+size+sh+' '+x.c.sym+' moved '+mv.length);
+        if(new Set(mv.map(m=>Math.sign(m.st))).size!==1)bad.push(ex+' dir '+k+mode+size+sh+x.c.sym); if(mv.some(m=>Math.abs(m.st)>2))bad.push(ex+' leap '+k+mode+size+sh+x.c.sym);}
       if(ex==='out'&&x.d){const r=M.to[sh][x.d],sh2=x.c.tones.filter(t=>M.ch[0].tones.some(y=>y.pc===t.pc)).length;
         if(r.n!==size-sh2)bad.push('count '+k+mode+size+sh+x.c.sym); if(new Set(r.mv.map(m=>Math.sign(m.st))).size!==1)bad.push('dir '+k+mode+size+sh+x.c.sym);
         if(r.mv.some(m=>Math.abs(m.st)>2))bad.push('leap '+k+mode+size+sh+x.c.sym);} }
@@ -66,7 +67,7 @@ with sync_playwright() as pw:
     static["targetHidden"] = ""; static["shapeHidden"] = ""
     g = pg.evaluate(GATE); q = pg.evaluate(QUIZ); b.close()
 os.remove(tmp); assert not errs, errs
-print(f"  gate: {g['n']} chords checked across 12 keys x 3 scales x 2 sizes x 2 drills x every shape; problems: {len(g['bad'])}")
+print(f"  gate: {g['n']} chords checked across 12 keys x 3 scales x 2 sizes x 5 drills x every shape; problems: {len(g['bad'])}")
 assert not g["bad"], g["bad"]
 print(f"  quiz: 40 simulated questions, score shows '{q['s']}' (one wrong count on purpose each time) ; problems: {q['bad']}")
 assert not q["bad"] and q["done"] == 40 and q["right"] == 0, q
