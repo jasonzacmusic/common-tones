@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Common Tones</title>
+<meta name="description" content="%%DESC%%">
+<link rel="icon" href="%%FAVICON%%">
+<script>document.documentElement.classList.add("js");</script>
+<style>
+%%FONTS%%
+%%CSS%%
+</style>
+</head>
+<body>
+<div class="page" id="app">
+<header class="top">
+  <img class="logo" src="%%LOGO%%" alt="Nathaniel School of Music" width="200" height="65">
+  <div class="ttl">
+    <p class="eyebrow">Practice app · Jason Zac</p>
+    <h1>Common <em>Tones</em></h1>
+    <p class="lede">From the home chord, every chord in the key is one, two or three fingers away. Lift notes and you reach one side of the key; let them sink and you reach the other. Play it, slow it down, then train your ear to hear which note moved.</p>
+  </div>
+</header>
+
+<section class="setup" aria-label="Key and chords">
+  <div class="ctl"><h3>Key</h3><div class="chips keys" id="keyChips">%%B:keyChips%%</div></div>
+  <div class="row2">
+    <div class="ctl"><h3>Scale</h3><div class="chips" id="modeChips">%%B:modeChips%%</div></div>
+    <div class="ctl"><h3>Chords</h3><div class="chips" id="sizeChips">%%B:sizeChips%%</div></div>
+  </div>
+</section>
+
+<section class="ladderBox" aria-labelledby="ladderH">
+  <h2 id="ladderH">The ladder <small id="ladderKey">%%B:ladderKey%%</small></h2>
+  <p class="sub">The number is how many notes move from the home chord. Tap a chord to hear home → chord → home.</p>
+  <div id="ladder" class="ladder">%%B:ladder%%</div>
+</section>
+
+<nav class="tabs" role="tablist" aria-label="Practice modes">
+  <button type="button" role="tab" id="tabPlay" aria-controls="panePlay" aria-selected="true">Play along</button>
+  <button type="button" role="tab" id="tabEar" aria-controls="paneEar" aria-selected="false">Which note moved?</button>
+</nav>
+
+<section id="panePlay" class="pane" role="tabpanel" aria-labelledby="tabPlay">
+  <div class="bench">
+    <div class="benchMain">
+      <div class="now" id="now">%%B:now%%</div>
+      <div class="kbWrap" id="live">%%B:live%%</div>
+      <div class="bars" id="bars">%%B:bars%%</div>
+      <div class="staff" id="staff">%%B:staff%%</div>
+    </div>
+    <div class="benchSide">
+      <div class="ctl"><h3>Exercise</h3><div class="chips" id="exChips">%%B:exChips%%</div><p class="note" id="exNote">%%B:exNote%%</p></div>
+      <div class="ctl" id="targetRow" %%B:targetHidden%%><h3>Go out to</h3><div class="chips" id="targetChips">%%B:targetChips%%</div></div>
+      <div class="ctl" id="shapeRow" %%B:shapeHidden%%><h3>Home shape</h3><div class="chips" id="shapeChips">%%B:shapeChips%%</div></div>
+      <div class="ctl"><h3>Hits per chord</h3><div class="chips" id="hitChips">%%B:hitChips%%</div></div>
+      <div class="ctl"><h3>Hands</h3><div class="chips" id="handChips">%%B:handChips%%</div></div>
+      <div class="transport">
+        <button type="button" id="play" class="play">Play</button>
+        <button type="button" id="metro" class="metro">Metronome</button>
+        <span class="dots" id="dots" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      </div>
+      <div class="tempo">
+        <button type="button" id="slower" aria-label="Slower">−5</button>
+        <label for="bpm">Tempo <output id="bpmOut">60</output> bpm</label>
+        <input type="range" id="bpm" min="40" max="120" step="1" value="60">
+        <button type="button" id="faster" aria-label="Faster">+5</button>
+      </div>
+      <div class="checks"><label><input type="checkbox" id="countIn" checked> Count-in</label><label><input type="checkbox" id="click" checked> Click with the piano</label></div>
+      <p class="status" id="status" role="status">Press Play. Sound starts on your first tap.</p>
+    </div>
+  </div>
+</section>
+
+<section id="paneEar" class="pane" role="tabpanel" aria-labelledby="tabEar" hidden>
+  <div class="ear">
+    <div class="earMain">
+      <p class="earQ" id="earQ">You'll hear the home chord, then a mystery chord from the same key. Count the notes that moved, hear which way they went, then name the chord.</p>
+      <div class="earBtns"><button type="button" id="earNew" class="play">New question</button><button type="button" id="earAgain">Play again</button><button type="button" id="earHome">Home chord only</button></div>
+      <div class="step" id="step1"><h3>1 · How many notes moved?</h3><div class="chips big" id="ansN"></div></div>
+      <div class="step" id="step2"><h3>2 · Which way?</h3><div class="chips big" id="ansD"></div></div>
+      <div class="step" id="step3"><h3>3 · Which chord?</h3><div class="chips big" id="ansC"></div></div>
+      <div class="reveal" id="reveal" aria-live="polite"></div>
+    </div>
+    <div class="earSide">
+      <div class="score" id="score"><b>0</b> of <b>0</b><small>right first time</small></div>
+      <div class="ctl"><h3>Questions from</h3><div class="chips" id="earShape"></div></div>
+      <div class="ctl"><h3>Chords in the quiz</h3><div class="chips" id="earSet"></div></div>
+      <div class="ctl"><h3>Gap between chords</h3><div class="chips" id="earGap"></div></div>
+      <p class="note">Tip: listen to the top note first. If it stayed, listen lower.</p>
+    </div>
+  </div>
+</section>
+
+<section class="learn" aria-labelledby="howH">
+  <h2 id="howH">How it works</h2>
+  <div class="cols">
+    <div>
+      <h3>Two, one, none</h3>
+      <p>Take the home chord, I. The chords on the 3rd and 6th notes of the scale (iii and vi) share two of its notes, so only one finger moves. IV and V share one note, so two fingers move. ii and vii° share nothing: all three move. Every one of those moves is a half step or a whole step.</p>
+      <h3>Up or down</h3>
+      <p>Lift the notes and you reach vi, IV and ii: the side that leans away from home. Let them sink and you reach iii, V and vii°: the side that pulls back home. The leading tone (the 7th note of the scale) arrives on the way down.</p>
+      <h3>In minor</h3>
+      <p>The relative minor uses the same notes, so the ladder is the same: VI, iv and ii° rise; III, v and VII fall. Harmonic minor raises the 7th note, which makes v a major V and puts a half step on the falling side.</p>
+    </div>
+    <div>
+      <h3>With seventh chords</h3>
+      <p>Add the 7th and every chord shares at least one note with home: iii7 and vi7 share three, IVmaj7 and V7 share two, ii7 and viiø7 share one. The 1–2–3 pattern stays, but the direction flips: vi7 drops the 7th, iii7 lifts the root.</p>
+      <h3>Why the names</h3>
+      <p>The dominant is a fifth above home; the subdominant is the same distance below. The mediant sits halfway up to the dominant, and the submediant halfway down to the subdominant. The relative minor is the submediant chord.</p>
+      <h3>Practise like this</h3>
+      <ol class="plan"><li>The thirds chain, one finger at a time.</li><li>Out and back from root position. Hold the shared notes down.</li><li>The same from the 1st and 2nd inversions.</li><li>Ears only: the quiz above, five a day.</li><li>Minor, then the next key round the circle.</li></ol>
+    </div>
+  </div>
+  <h3 class="tblH">The ladder in every key</h3>
+  <div class="tbl" id="keyTable">%%B:keyTable%%</div>
+  <dl class="qa">
+    <dt>Which hand plays what?</dt><dd>Right hand plays the chord shapes. Left hand plays the root of each chord, low down.</dd>
+    <dt>Do I have to move to the nearest shape?</dt><dd>That's the exercise. Keep the shared notes where they are and step the rest. The keyboard shows the shape for you.</dd>
+    <dt>What tempo?</dt><dd>Start at 40–60 bpm with four hits per chord. Speed comes after the shapes are automatic.</dd>
+    <dt>Why does vi sound like home but not quite?</dt><dd>Two of its notes are the home chord's notes, so it sounds close to home but less final.</dd>
+  </dl>
+</section>
+
+<footer class="foot">
+  <p>Common Tones · a lesson by Jason Zac · Nathaniel School of Music</p>
+  <p class="links">%%LINKS%%</p>
+</footer>
+</div>
+<script>%%VEX%%</script>
+<script>const SAMPLES=%%SAMPLES%%;</script>
+<script>
+%%JS%%
+</script>
+</body>
+</html>

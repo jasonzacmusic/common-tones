@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Common Tones — Teacher Deck</title>
+<meta name="description" content="%%DESC%%">
+<link rel="icon" href="%%FAVICON%%">
+<script>document.documentElement.classList.add("js");</script>
+<style>
+%%FONTS%%
+%%CSS%%
+</style>
+</head>
+<body>
+<div id="canvas">
+  <div class="topbar">
+    <img class="logo" src="%%LOGO%%" alt="Nathaniel School of Music" width="160" height="52">
+    <p class="deckName">Common Tones <span>· how chords connect</span></p>
+    <div class="keypick"><button type="button" id="prevK" aria-label="Key down a semitone">◀</button><span id="keyName" class="keyName">G major</span><button type="button" id="nextK" aria-label="Key up a semitone">▶</button></div>
+  </div>
+  <main id="stage" class="stage">%%B:stage%%</main>
+  <footer class="foot"><ol id="strip" class="strip"></ol><span id="hint" class="hint"></span></footer>
+</div>
+<script>%%VEX%%</script>
+<script>
+%%JS%%
+</script>
+</body>
+</html>
